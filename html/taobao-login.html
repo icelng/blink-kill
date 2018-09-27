@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录淘宝</title>
+    <link rel="stylesheet" type="text/css" href="../semantic/dist/semantic.min.css">
+    <script>
+        window.$ = window.jQuery = require('jquery');
+    </script>
+    <script src="../semantic/dist/semantic.min.js"></script>
+</head>
+<body style="-webkit-app-region: drag;">
+
+<div style="position: fixed; z-index: 998; top: -2px; right: 0px; overflow: auto; background-color: rgba(0,0,0,0)" align="right">
+    <div style="-webkit-app-region: no-drag;" align="right" class="ui icon buttons">
+        <button class="ui button active" id="btn_close_window" style="background-color: rgba(0,0,0,0)">
+            <i class="window close icon"></i>
+        </button>
+    </div>
+</div>
+
+<div style="position: fixed; left: 0px; right: 0px; top: 32px; bottom: 0px; background-color: white; -webkit-app-region: no-drag;">
+    <!--<h1>Hello world!!!!</h1>-->
+    <webview id="wbv_login_taobao" preload="../js/taobao-login.js" src="https://login.taobao.com/" partition="taobao-login" style="overflow: hidden; width: 500px; height: 640px"></webview>
+</div>
+
+<script>
+    let ipcRenderer = require('electron').ipcRenderer;
+    let webview = document.getElementById('wbv_login_taobao');
+
+
+    $('#btn_close_window').click(() => {
+        webview.getWebContents().session.clearStorageData(() => {
+            ipcRenderer.send('close-taobao-login-window');
+        });
+    });
+
+    webview.addEventListener('dom-ready', () => {
+        webview.openDevTools();
+    });
+
+    webview.addEventListener("ipc-message", (event) => {
+        if (event.channel === 'login-succeed') {
+            console.log('Login succeed!');
+            webview.getWebContents().session.clearStorageData(() => {
+                ipcRenderer.send('close-taobao-login-window');
+            });
+        }
+    });
+
+    webview.addEventListener('will-navigate', () => {
+        // console.log('Go to url: ' + webview.getURL());
+    });
+
+    webview.addEventListener('did-navigate', () => {
+        // if (webview.get)
+    });
+
+</script>
+
+</body>
+</html>

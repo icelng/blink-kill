@@ -1,0 +1,20 @@
+{
+  "name": "study-electron",
+  "version": "1.0.0",
+  "description": "Studying let me happy!",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "test",
+    "build": "build "
+  },
+  "author": "yiran",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^2.0.8",
+    "electron-json-storage": "^4.1.2",
+    "jquery": "^3.3.1",
+    "semantic-ui": "^2.3.3",
+    "semantic-ui-calendar": "0.0.8"
+  }
+}

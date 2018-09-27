@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>秒杀</title>
+    <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
+    <link rel="stylesheet" type="text/css" href="semantic/semantic-ui-calendar/calendar.min.css">
+    <script>
+        window.$ = window.jQuery = require('jquery');
+    </script>
+    <script src="semantic/dist/semantic.min.js"></script>
+    <script src="semantic/semantic-ui-calendar/calendar.min.js"></script>
+</head>
+<body style="-webkit-app-region:drag;">
+
+<div style="position: fixed; z-index: 998; top: -2px; right: 0px; overflow: auto; background-color: rgba(0,0,0,0)" align="right">
+    <div style="-webkit-app-region: no-drag;" align="right" class="ui icon buttons">
+        <button class="ui button active" id="btn_hide_window" style="background-color: rgba(0,0,0,0)">
+            <i class="window minimize icon"></i>
+        </button>
+        <button class="ui button active" id="btn_max_window" style="background-color: rgba(0,0,0,0)">
+            <i class="window maximize icon"></i>
+        </button>
+        <button class="ui button active" id="btn_close_window" style="background-color: rgba(0,0,0,0)">
+            <i class="window close icon"></i>
+        </button>
+    </div>
+</div>
+
+<div style="z-index: 999;float: left; overflow: hidden; width: 256px; height: 100%;">
+    <div style="position: fixed; width: 48px; height: 100%; background-color: #1b1c1d"></div>
+    <div class="ui left fixed vertical borderless inverted icon menu">
+        <div style="-webkit-app-region: no-drag">
+            <a class="ui item">
+                <i class="users icon"></i>
+            </a>
+            <a class="ui item">
+                <i class="gamepad icon"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="select_user" style="-webkit-app-region: no-drag; position: fixed; z-index: 999; left: 58px; top: 8px;">
+    <div class="ui dropdown" id="dd_select_user">
+        <input type="hidden" name="filters">
+        <i class="user icon"></i>
+        <span class="text">选择用户</span>
+        <div class="menu">
+            <div class="ui icon search input" style="display: inline-block">
+                <i class="search icon"></i>
+                <input type="text" placeholder="搜索">
+            </div>
+            <button id="btn_add_user" style="position: relative; left: -8px; top: -1px; background-color: rgba(0,0,0,0)" class="ui compact icon button">
+                <i class="plus icon"></i>
+            </button>
+            <div class="scrolling menu">
+                <div class="item" data-value="empty" style="visibility: hidden"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="position: fixed; left: 48px; right: 0px; top: 32px; bottom: 0px; background-color: white; -webkit-app-region: no-drag;">
+    <div class="ui form" style="float: left; left: 10px; width: 50%; display: inline">
+        <div class="inline field">
+            <label>商品地址</label>
+            <input id="tv_good_item_addr" type="text" style="width: 75%">
+            <button id="btn_goto_good_item" class="ui submit button" type="submit" style="position: relative; left: 8px;">进入</button>
+        </div>
+    </div>
+
+    <div class="ui form" style="float: left; left: 32px; width: 50%">
+        <div class="inline fields">
+            <div class="field">
+                <div class="ui calendar" id="calendar_example">
+                    <div class="ui input left icon">
+                        <i class="calendar icon"></i>
+                        <input type="text" id="tv_quick_order_time" placeholder="抢购时间">
+                    </div>
+                </div>
+            </div>
+
+            <div class="three wide field">
+                <input type="text" id="tv_quick_order_time_offset" placeholder="偏移" oninput="value=value.replace(/[^(\d|\-)]/g,''); value=value.replace(/(\d)[^\d]/g, '$1')">
+                <label>ms</label>
+            </div>
+
+            <div class="field">
+                <button class="ui positive button" id="btn_quick_order">开始</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!--<h1>Hello world!!!!</h1>-->
+    <webview id="foo" preload="./js/taobao-quick-order.js" src="https://www.taobao.com/" partition="star"  style="position: relative;  width: 100%; height: 100%"></webview>
+</div>
+
+<script>
+    let ipcRenderer = require('electron').ipcRenderer;
+    const taobaoUsersManager = require('electron').remote.require('./js/node_modules/taobao-users-manager.js');
+    const tempStorage = require('electron').remote.require('./js/node_modules/temp-storage');
+    let isMaximize = false;
+    let storage = require('electron-json-storage');
+    let taobaoUsers = null;
+
+    let webview = document.getElementById('foo');
+    webview.addEventListener('dom-ready', () => {
+        // let startTime = new Date('2017-09-07 20:00:00:000').getTime();
+        let startTime = new Date('2018-09-07 20:52:34:000').getTime();
+        let nowTime = new Date().getTime();
+        let interval = startTime - nowTime;
+
+
+
+        webview.openDevTools();
+    });
+
+    $('#calendar_example').calendar({
+        ampm: false,
+        formatter: {
+            date: function (date, settings) {
+                if (!date) return '';
+
+                let year  = date.getFullYear();
+                let month = date.getMonth() + 1;
+                let day   = date.getDate();
+                // let time  = date.get;
+
+                month = month < 10 ? '0'+month : month;
+                day   = day   < 10 ? '0'+day   : day;
+
+                return year + '-' + month + '-' + day;
+            }
+        }
+    });
+
+
+    function setCookiesToWebview(cookies, webview, callback) {
+        webview.getWebContents().session.clearStorageData(() => {
+            let session = webview.getWebContents().session;
+
+            cookies.forEach((cookie) => {
+                const scheme = cookie.secure ? "https" : "http";
+                const host = cookie.domain[0] === "." ? cookie.domain.substr(1) : cookie.domain;
+                cookie.url = scheme + "://" + host;
+                // console.log('Add cookie: ' + JSON.stringify(cookie));
+                session.cookies.set(cookie, error => {
+                    if (error) {
+                        throw error;
+                    }
+                });
+            });
+
+            callback();
+        });
+    }
+
+    function selectUser(item) {
+        let webview = document.getElementById('foo');
+        webview.loadURL('about:blank');
+        let username = $(item).attr('data-value');
+        let userData = taobaoUsers[username];
+
+        webview.getWebContents().session.clearStorageData(() => {
+
+            setCookiesToWebview(userData.cookies, webview, () => {
+                taobaoUsersManager.setCurrentUser(username);
+                webview.loadURL('https://www.taobao.com/');
+            });
+
+        });
+    }
+
+    function loadUsers() {
+        storage.setDataPath(__dirname + '/data');
+        storage.get('taobao-users', (error, data) => {
+            if (error) throw error;
+            taobaoUsers = data;
+            console.log('Get taobao-users: ');
+            console.log(data);
+
+            for (let username in taobaoUsers) {
+                console.log('Add user: ' + username);
+                $('#select_user').find('.scrolling.menu').append(` <div class="item" data-value="`+ username + `" onclick="selectUser(this)">` + username + `</div>`);
+            }
+
+            taobaoUsersManager.getCurrentUser(userData => {
+                if (userData) {
+                    console.log('Select current user: ' + userData.username);
+                    $('#dd_select_user').dropdown('set selected', userData.username);
+                    selectUser($('#dd_select_user').dropdown('get item', userData.username).get(0));
+                }
+            });
+        });
+
+    }
+
+    $(document).ready(() => {
+        $('.ui.dropdown').dropdown();
+        loadUsers();
+    });
+
+    ipcRenderer.on('taobao-users-update', (event, message) => {
+        $('#select_user').find('.scrolling.menu').empty();
+        loadUsers();
+    });
+
+    $('#btn_goto_good_item').click(() => {
+        webview.loadURL($('#tv_good_item_addr').val());
+    });
+
+    $('#btn_quick_order').click(() => {
+        if (tempStorage.getItem('is_quick_order_monitoring')) {
+            $('#btn_quick_order').removeClass('negative').addClass('positive').text('开始');
+            tempStorage.setItem('is_quick_order_monitoring', false);
+        } else {
+
+            let startTime = new Date($('#tv_quick_order_time').val()).getTime();
+            startTime += parseInt($('#tv_quick_order_time_offset').val());
+            let nowTime = new Date().getTime();
+            let interval = startTime - nowTime;
+
+            console.log('The startTime is: ' + startTime);
+            console.log('The nowTime is: ' + nowTime);
+            console.log('The interval is: ' + interval);
+
+            if (interval > 0) {
+                tempStorage.setItem('is_quick_order_monitoring', true, () => {
+                    console.log('Start order monitor');
+                    setTimeout(() => {
+                        webview.loadURL($('#tv_good_item_addr').val());
+                    }, interval);
+                    $('#btn_quick_order').removeClass('positive').addClass('negative').text('停止');
+                });
+            }
+        }
+
+    });
+
+    $('#btn_max_window').click(() => {
+        if (isMaximize) {
+            $('#btn_max_window').children(0).removeClass('window restore icon').addClass('window maximize icon');
+            ipcRenderer.send('restore-window');
+            isMaximize = false;
+        } else {
+            $('#btn_max_window').children(0).removeClass('window maximize icon').addClass('window restore icon');
+            ipcRenderer.send('maximize-window');
+            isMaximize = true;
+        }
+    });
+
+    $('#btn_hide_window').click(() => {
+        ipcRenderer.send('minimize-window');
+        isMaximize = false;
+    });
+
+    $('#btn_close_window').click(() => {
+        console.log("close-window");
+        ipcRenderer.send('close-window');
+    });
+
+    $('#btn_add_user').click(() => {
+        ipcRenderer.send('add-user');
+    });
+
+
+</script>
+
+</body>
+</html>
