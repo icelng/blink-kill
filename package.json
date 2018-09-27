@@ -1,7 +1,7 @@
 {
-  "name": "study-electron",
+  "name": "blink-kill",
   "version": "1.0.0",
-  "description": "Studying let me happy!",
+  "description": "Who is faster than me?",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
