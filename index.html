@@ -90,6 +90,10 @@
                 <button class="ui positive button" id="btn_quick_order">开始</button>
             </div>
 
+            <div class="field" >
+                <p id="tx_remain_time">0</p>s
+            </div>
+
         </div>
     </div>
 
@@ -200,6 +204,10 @@
     $(document).ready(() => {
         $('.ui.dropdown').dropdown();
         loadUsers();
+        $('#tx_remain_time').parent().hide();
+        setInterval(() => {
+            $('#tx_remain_time').text($('#tx_remain_time').text() - 1);
+        }, 1000);
     });
 
     ipcRenderer.on('taobao-users-update', (event, message) => {
@@ -215,6 +223,7 @@
         if (tempStorage.getItem('is_quick_order_monitoring')) {
             $('#btn_quick_order').removeClass('negative').addClass('positive').text('开始');
             tempStorage.setItem('is_quick_order_monitoring', false);
+            $('#tx_remain_time').parent().hide();
         } else {
 
             let startTime = new Date($('#tv_quick_order_time').val()).getTime();
@@ -233,6 +242,8 @@
                         webview.loadURL($('#tv_good_item_addr').val());
                     }, interval);
                     $('#btn_quick_order').removeClass('positive').addClass('negative').text('停止');
+                    $('#tx_remain_time').parent().show();
+                    $('#tx_remain_time').text(parseInt(interval/1000));
                 });
             }
         }

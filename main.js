@@ -70,7 +70,7 @@ ipcMain.on('add-user', () => {
         slashes: true
     }));
 
-    login_window.openDevTools();
+    // login_window.openDevTools();
 
     let close_listener = function() {
         login_window.close();

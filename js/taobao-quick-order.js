@@ -53,7 +53,7 @@ function main() {
                 });
             }
 
-            if (tempStorage.getItem('is_quick_order_monitoring_')) {
+            if (tempStorage.getItem('is_quick_order_monitoring')) {
                 let orderButton = document.getElementsByClassName('go-btn')[0];
                 if (orderButton) {
                     tempStorage.setItem('is_need_order', false);
