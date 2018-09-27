@@ -57,7 +57,7 @@ function main() {
                 let orderButton = document.getElementsByClassName('go-btn')[0];
                 if (orderButton) {
                     tempStorage.setItem('is_need_order', false);
-                    console.log();
+                    console.log("下订单");
                     document.getElementsByClassName('go-btn')[0].click();
                 }
             }
